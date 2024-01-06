@@ -11,9 +11,11 @@ Professionally, I've sharpened my skills as an intern at Amazon in Search Scienc
 When I have the time I love to practice boxing or go skateboarding. I also greatly enjoy taking photos and snowboarding with my friends.
 
 Feel free to check me out on any of my socials.
-[LinkedIn](https://www.linkedin.com/in/rith-raj/) | [Instagram](https://www.instagram.com/rith_film/) | [Medium](https://medium.com/@rithvik.rajavelu) | Github(github.com/rithraj)
+
+[LinkedIn](https://www.linkedin.com/in/rith-raj/) | [Instagram](https://www.instagram.com/rith_film/) | [Medium](https://medium.com/@rithvik.rajavelu) | [GitHub](github.com/rithraj)
 
 If you have an questions or want to email me, you can reach me at:
+
 ```
 rithvik.rajavelu@gmail.com
 ```
