@@ -16,7 +16,7 @@ When I have the time I love to practice boxing or go skateboarding. I also great
 
 Feel free to check me out on any of my socials.
 
-[LinkedIn](https://www.linkedin.com/in/rith-raj/) | [Instagram](https://www.instagram.com/rith_film/) | [Medium](https://medium.com/@rithvik.rajavelu) | [GitHub](github.com/rithraj)
+[LinkedIn](https://www.linkedin.com/in/rith-raj/) | [Instagram](https://www.instagram.com/rith_film/) | [Medium](https://medium.com/@rithvik.rajavelu) | [GitHub](https://github.com/rithraj)
 
 If you have any questions or want to email me, you can reach me at:
 
