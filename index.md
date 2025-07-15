@@ -2,19 +2,25 @@
 layout: default
 ---
 
-**Hi, I’m Rithvik Rajavelu!**
+<div class="hero text-center" data-aos="fade-up">
+  <h1 class="display-3">Hi, I’m Rithvik Rajavelu!</h1>
+  <p class="lead">Software Engineer II at NCR Atleos</p>
+</div>
 
-I'm a M.S. in Computer Science Graduate from Georgia Tech, specializing in Interactive Intelligence. I am currently working as a Software Engineer II at NCR Atleos.
+<div class="container" data-aos="fade-up">
 
-My academic journey is marked by a deep interest in AI, Machine Learning, and Data Structures. My main interests lie in data privacy, ethical AI practices, and the exploration of algorithmic predictions and automation in the workforce. I'm enthusiastic about discovering and advocating for responsible and innovative uses of AI and machine learning technologies.
+### About Me
 
-Professionally, I've sharpened my skills as an intern at Amazon in Search Science and AI, and as a Software Engineering Intern at Publicis Sapient. Additionally, I served as a Graduate Teaching Assistant at Georgia Tech, where I guided students through software development processes and ethical technology considerations.
+I'm a M.S. in Computer Science graduate from Georgia Tech, specializing in Interactive Intelligence. My passion lies in AI, Machine Learning, and Data Structures. I care deeply about data privacy and ethical AI practices.
 
-My current role at NCR Atleos has me working with Azure OpenAI and Langchain in order to create Retrieval Augmented Generation (RAG) Systems as a way to optimize the LLMs that we are using for our specific use cases.
+### Professional Experience
 
-When I have the time I love to practice boxing or go skateboarding. I also greatly enjoy taking photos and snowboarding with my friends.
+- Over 3 years of experience building AI-driven software solutions.
+- Currently building Retrieval Augmented Generation systems with Azure OpenAI and Langchain at NCR Atleos.
+- Developed a Java-based ML debug tool at Amazon, improving model parameter retrieval time by 30%.
+- Created automated campaign management systems using React and Spring Boot at Publicis Sapient.
 
-Feel free to check me out on any of my socials.
+### Get In Touch
 
 [LinkedIn](https://www.linkedin.com/in/rith-raj/) | [Instagram](https://www.instagram.com/rith_film/) | [Medium](https://medium.com/@rithvik.rajavelu) | [GitHub](https://github.com/rithraj)
 
@@ -24,5 +30,4 @@ If you have any questions or want to email me, you can reach me at:
 rithvik.rajavelu@gmail.com
 ```
 
-
-
+</div>
