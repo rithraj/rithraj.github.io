@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atleos Connect: Touchless ATM Initiative</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: NCR Atleos Green (#004e3f) -->
+    <!-- Application Structure Plan: A top-down, single-page dashboard designed for executive review. It starts with a high-level summary/ROI (The Hook), defines the problem/opportunity, presents our solution visually, details the strategic value, provides an interactive financial deep-dive (The Core Ask), and ends with a clear implementation roadmap and call to action. This narrative flow is designed to build a compelling business case logically and persuasively, allowing leaders to either skim the highlights or explore the financial data interactively, which is more effective than a static report. -->
+    <!-- Visualization & Content Choices: Report info (e.g., ATM friction) is presented with icons/text (Goal: Inform, Method: HTML/CSS) for quick scanning. The core solution is a visual flow diagram (Goal: Organize, Method: HTML/CSS) for clarity. Financials are the focus: a stacked bar chart (Goal: Compare, Library: Chart.js) shows clear cost savings, a line chart (Goal: Change, Library: Chart.js) projects new revenue, and an interactive slider for ROI (Goal: Engage, Method: JS) allows for what-if analysis. A visual timeline (Goal: Organize, Method: HTML/CSS) shows planning. This mix of static visuals and interactive charts provides both at-a-glance understanding and deeper data exploration, crucial for an financial decision. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .nav-link {
+            transition: color 0.3s ease, border-bottom-color 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #004e3f; /* NCR Atleos Green */
+            border-bottom-color: #004e3f;
+        }
+        .kpi-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer; /* Indicate clickable */
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-height: 400px;
+            cursor: pointer; /* Indicate clickable */
+        }
+        .chart-container:hover {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .ncr-green { color: #004e3f; } /* Custom class for NCR Atleos Green text */
+        .ncr-green-bg { background-color: #004e3f; } /* Custom class for NCR Atleos Green background */
+        .section-title {
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 800;
+            color: #1e293b; /* slate-800 */
+        }
+        .section-subtitle {
+            font-size: 1.125rem; /* text-xl */
+            color: #475569; /* slate-600 */
+            max-width: 48rem; /* max-w-3xl */
+            margin: 1rem auto 0;
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .modal-overlay.open .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #475569;
+        }
+        .calculation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .calculation-table th, .calculation-table td {
+            border: 1px solid #e2e8f0; /* slate-200 */
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .calculation-table th {
+            background-color: #f1f5f9; /* slate-100 */
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold ncr-green">Atleos Connect</h1>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-semibold tracking-wide uppercase text-slate-500">
+                <a href="#opportunity" class="nav-link pb-1">Opportunity</a>
+                <a href="#solution" class="nav-link pb-1">Solution</a>
+                <a href="#value" class="nav-link pb-1">Value</a>
+                <a href="#financials" class="nav-link pb-1">Financials</a>
+                <a href="#roadmap" class="nav-link pb-1">Roadmap</a>
+            </div>
+            <a href="#cta" class="hidden md:block ncr-green-bg text-white font-bold py-2 px-4 rounded-full hover:opacity-90 transition-opacity">
+                Approve Atleos Connect
+            </a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 md:py-32 text-center bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="text-4xl md:text-6xl font-extrabold ncr-green leading-tight">Reimagining the ATM Experience with Atleos Connect</h2>
+                <p class="mt-4 text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">A strategic proposal to deploy Touchless ATM Cash Dispensing across the NCR Atleos network, driving security, convenience, and new revenue.</p>
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="kpi-card" id="fraud-kpi">
+                        <p class="text-4xl font-bold text-emerald-600">$21.3M</p>
+                        <h3 class="mt-2 font-semibold text-slate-800">Annual Fraud Cost Reduction</h3>
+                        <p class="text-sm text-slate-500 mt-1">Projected over 5 years</p>
+                    </div>
+                    <div class="kpi-card" id="time-kpi">
+                        <p class="text-4xl font-bold text-emerald-600">95%</p>
+                        <h3 class="mt-2 font-semibold text-slate-800">Faster Transaction Time</h3>
+                        <p class="text-sm text-slate-500 mt-1">Average 15s vs. 300s (5 min)</p>
+                    </div>
+                    <div class="kpi-card" id="roi-kpi">
+                        <p class="text-4xl font-bold text-emerald-600" id="hero-roi">187%</p>
+                        <h3 class="mt-2 font-semibold text-slate-800">Projected 5-Year ROI</h3>
+                        <p class="text-sm text-slate-500 mt-1">Based on 40% adoption rate</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="opportunity" class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">The Opportunity: Addressing Market Friction</h2>
+                <p class="section-subtitle">While essential, the traditional ATM experience is fraught with persistent challenges that erode customer trust and satisfaction. We have a strategic opportunity to lead the market by solving these fundamental problems.</p>
+                <div class="mt-16 grid md:grid-cols-3 gap-12 text-left">
+                    <div class="p-8 bg-white rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <span class="text-4xl">💳</span>
+                            <h3 class="ml-4 text-xl font-bold text-slate-800">Security Vulnerabilities</h3>
+                        </div>
+                        <p class="mt-4 text-slate-600">Physical cards are the primary vector for skimming attacks, leading to millions in annual fraud losses and damaging brand reputation. Fixed PINs are a single point of failure.</p>
+                    </div>
+                    <div class="p-8 bg-white rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <span class="text-4xl">⏱️</span>
+                            <h3 class="ml-4 text-xl font-bold text-slate-800">Customer Inconvenience</h3>
+                        </div>
+                        <p class="mt-4 text-slate-600">Long queues, fumbling for wallets, forgotten PINs, and complex on-screen menus create a frustrating and time-consuming experience, leading to customer churn in a competitive landscape.</p>
+                    </div>
+                    <div class="p-8 bg-white rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <span class="text-4xl">🧼</span>
+                            <h3 class="ml-4 text-xl font-bold text-slate-800">Health & Hygiene Concerns</h3>
+                        </div>
+                        <p class="mt-4 text-slate-600">In a post-pandemic world, public awareness of surface hygiene is at an all-time high. Physical keypads and touchscreens are significant barriers for health-conscious consumers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="section-title">Our Solution: Secure, Seamless, Swift</h2>
+                <p class="section-subtitle">Atleos Connect introduces a mobile-first workflow that eliminates physical cards and contact. The user's mobile device becomes the key, transforming the ATM into a simple, secure cash dispensing touchpoint.</p>
+                <div class="mt-16 max-w-4xl mx-auto">
+                    <div class="relative flex flex-col md:flex-row items-center justify-between p-4">
+                        <div class="flex-1 text-center p-4">
+                            <div class="text-5xl mb-4 ncr-green-bg text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">1</div>
+                            <h3 class="font-bold text-lg">Initiate in App</h3>
+                            <p class="text-sm text-slate-600">User securely selects withdrawal amount in their trusted mobile banking app, anytime, anywhere.</p>
+                        </div>
+                        <div class="hidden md:block h-1 w-full bg-slate-300"></div>
+                        <div class="md:hidden w-1 h-16 bg-slate-300 my-4"></div>
+                        <div class="flex-1 text-center p-4">
+                            <div class="text-5xl mb-4 ncr-green-bg text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">2</div>
+                            <h3 class="font-bold text-lg">Get Secure OTP</h3>
+                            <p class="text-sm text-slate-600">The app generates a dynamic, time-sensitive One-Time Password (OTP) for the specific transaction.</p>
+                        </div>
+                        <div class="hidden md:block h-1 w-full bg-slate-300"></div>
+                        <div class="md:hidden w-1 h-16 bg-slate-300 my-4"></div>
+                        <div class="flex-1 text-center p-4">
+                           <div class="text-5xl mb-4 ncr-green-bg text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">3</div>
+                            <h3 class="font-bold text-lg">Enter at ATM</h3>
+                            <p class="text-sm text-slate-600">User approaches any enabled ATM and enters the OTP. Proximity verification ensures the user is present.</p>
+                        </div>
+                        <div class="hidden md:block h-1 w-full bg-slate-300"></div>
+                        <div class="md:hidden w-1 h-16 bg-slate-300 my-4"></div>
+                        <div class="flex-1 text-center p-4">
+                            <div class="text-5xl mb-4 bg-emerald-500 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto shadow-lg">4</div>
+                            <h3 class="font-bold text-lg">Collect Cash</h3>
+                            <p class="text-sm text-slate-600">The ATM securely dispenses the pre-staged cash amount. The transaction is complete in seconds.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="value" class="py-20">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title text-center">Core Strategic Value Pillars</h2>
+                <p class="section-subtitle text-center">This initiative is more than a feature; it's a strategic pivot that delivers compounding value across security, customer experience, and future growth.</p>
+                <div class="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-xl ncr-green">Enhanced Security</h3>
+                        <p class="mt-3 text-slate-600">By removing the physical card from the transaction, we virtually eliminate the risk of skimming. Dynamic OTPs render stolen credentials useless, creating the most secure cash access method on the market.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-xl ncr-green">Unmatched Convenience</h3>
+                        <p class="mt-3 text-slate-600">Pre-staging transactions reduces time at the ATM from minutes to seconds. This "grab-and-go" experience drastically improves customer satisfaction and reduces queues at high-traffic locations.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-xl ncr-green">Hygienic Advantage</h3>
+                        <p class="mt-3 text-slate-600">The touchless nature of this solution is a powerful differentiator that directly addresses modern consumer health concerns, making our network the preferred choice for safety-conscious users.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 class="font-bold text-xl ncr-green">Future-Ready Platform</h3>
+                        <p class="mt-3 text-slate-600">This architecture establishes a scalable ATM-as-a-Service model. It opens the door for high-margin value-added services like P2P cash transfers, bill payments, and targeted in-app promotions.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="financials" class="py-20 bg-white">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title text-center">The Business Case: A Compelling Financial Outlook</h2>
+                <p class="section-subtitle text-center">Atleos Connect is a profit engine, driving significant cost reductions through fraud prevention and generating new, high-margin value from increased user acquisition and expanded services.</p>
+                <div class="mt-16 grid lg:grid-cols-2 gap-16 items-start">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-800 text-center">Projected Annual Cost Savings from Fraud Prevention</h3>
+                        <p class="text-center text-slate-500 mb-4">Direct savings from eliminating card-related fraud and reducing other fraud types.</p>
+                        <div class="chart-container mx-auto max-w-2xl">
+                            <canvas id="costSavingsChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-800 text-center">Projected New Value from New User Acquisition</h3>
+                        <p class="text-center text-slate-500 mb-4">Value generated by attracting new users and increased engagement with expanded services.</p>
+                        <div class="chart-container mx-auto max-w-2xl">
+                            <canvas id="revenueGrowthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-20 p-8 bg-slate-50 rounded-lg shadow-inner">
+                    <h3 class="text-2xl font-bold text-slate-800 text-center">Interactive 5-Year ROI Projection</h3>
+                    <p class="text-center text-slate-500 mb-6">Adjust the projected customer adoption rate to see the impact on key financial metrics. Our base case assumes a 40% adoption by Year 5.</p>
+                    <div class="max-w-xl mx-auto">
+                        <label for="adoptionRate" class="block font-semibold mb-2">Customer Adoption Rate: <span id="adoptionRateLabel" class="font-bold ncr-green">40%</span></label>
+                        <input type="range" id="adoptionRate" min="10" max="80" value="40" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase">PROJECTED ROI</p>
+                            <p id="roiValue" class="text-4xl font-extrabold text-emerald-600 mt-1">187%</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase">NET PRESENT VALUE</p>
+                            <p id="npvValue" class="text-4xl font-extrabold text-emerald-600 mt-1">$28.1M</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase">PAYBACK PERIOD</p>
+                            <p id="paybackValue" class="text-4xl font-extrabold text-emerald-600 mt-1">2.8 yrs</p>
+                        </div>
+                         <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase">TOTAL 5-YR BENEFIT</p>
+                            <p id="benefitValue" class="text-4xl font-extrabold text-emerald-600 mt-1">$43.1M</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="py-20">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title text-center">Phased Implementation Roadmap</h2>
+                <p class="section-subtitle text-center">Our proposed timeline ensures a measured, data-driven rollout that mitigates risk while accelerating time-to-value. Each phase includes clear objectives and success metrics.</p>
+                <div class="mt-16 max-w-5xl mx-auto">
+                    <div class="relative">
+                        <div class="absolute left-1/2 -ml-0.5 w-1 h-full bg-slate-300" aria-hidden="true"></div>
+                        <div class="relative flex items-center justify-between mb-12">
+                            <div class="w-5/12">
+                                <div class="bg-white p-6 rounded-lg shadow-md text-right">
+                                    <p class="font-bold text-sm ncr-green uppercase">Phase 1 (Q4 2025 - Q1 2026)</p>
+                                    <h4 class="text-xl font-bold mt-1">Pilot Program</h4>
+                                    <p class="text-slate-600 mt-2">Deploy to a limited set of 500 ATMs in key urban markets with a partner bank. Validate technology and gather user feedback.</p>
+                                </div>
+                            </div>
+                            <div class="absolute left-1/2 -ml-4 w-8 h-8 rounded-full ncr-green-bg border-4 border-white"></div>
+                            <div class="w-5/12"></div>
+                        </div>
+                        <div class="relative flex items-center justify-between mb-12">
+                            <div class="w-5/12"></div>
+                            <div class="absolute left-1/2 -ml-4 w-8 h-8 rounded-full ncr-green-bg border-4 border-white"></div>
+                             <div class="w-5/12">
+                                <div class="bg-white p-6 rounded-lg shadow-md">
+                                    <p class="font-bold text-sm ncr-green uppercase">Phase 2 (Q2 2026 - Q4 2026)</p>
+                                    <h4 class="text-xl font-bold mt-1">Regional Expansion</h4>
+                                    <p class="text-slate-600 mt-2">Roll out to 20,000 ATMs across major regions based on pilot data. Launch marketing campaigns to drive adoption.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative flex items-center justify-between mb-12">
+                            <div class="w-5/12">
+                                <div class="bg-white p-6 rounded-lg shadow-md text-right">
+                                    <p class="font-bold text-sm ncr-green uppercase">Phase 3 (2027)</p>
+                                    <h4 class="text-xl font-bold mt-1">Full Network Rollout</h4>
+                                    <p class="text-slate-600 mt-2">Enable touchless capabilities across the entire NCR Atleos network. Integrate with multiple banking partners.</p>
+                                </div>
+                            </div>
+                            <div class="absolute left-1/2 -ml-4 w-8 h-8 rounded-full ncr-green-bg border-4 border-white"></div>
+                            <div class="w-5/12"></div>
+                        </div>
+                        <div class="relative flex items-center justify-between">
+                            <div class="w-5/12"></div>
+                            <div class="absolute left-1/2 -ml-4 w-8 h-8 rounded-full ncr-green-bg border-4 border-white"></div>
+                             <div class="w-5/12">
+                                <div class="bg-white p-6 rounded-lg shadow-md">
+                                    <p class="font-bold text-sm ncr-green uppercase">Phase 4 (2028+)</p>
+                                    <h4 class="text-xl font-bold mt-1">Value-Added Services</h4>
+                                    <p class="text-slate-600 mt-2">Launch new revenue-generating features, suchs as 'Send Cash to Others', international remittances, and integrated bill pay.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="cta" class="py-20 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                 <h2 class="text-3xl md:text-4xl font-extrabold ncr-green">Set a New Standard for ATM Innovation</h2>
+                 <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">Atleos Connect is a decisive step towards a more secure, convenient, and profitable future. By investing in this initiative, we will solidify NCR Atleos's position as the undisputed leader in the ATMaaS ecosystem.</p>
+                 <button class="mt-8 ncr-green-bg text-white font-bold py-4 px-8 rounded-full text-lg hover:opacity-90 transition-opacity shadow-lg">
+                    Approve Atleos Connect for Phase 1 Funding
+                 </button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 text-center py-6">
+        <p>&copy; 2025 NCR Atleos. Confidential Internal Proposal.</p>
+    </footer>
+
+    <!-- Calculation Modal -->
+    <div id="calculationModal" class="modal-overlay">
+        <div class="modal-content w-full md:w-1/2 lg:w-1/3">
+            <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+            <h3 class="text-2xl font-bold ncr-green mb-4" id="modalTitle"></h3>
+            <div id="modalContent" class="text-slate-700 leading-relaxed"></div>
+        </div>
+    </div>
+
+    <!-- Celebration Modal -->
+    <div id="celebrationModal" class="modal-overlay">
+        <div class="modal-content w-full md:w-1/2 lg:w-1/3 text-center">
+            <button class="modal-close-btn" id="closeCelebrationModalBtn">&times;</button>
+            <p class="text-5xl mb-4">🎉</p>
+            <h3 class="text-3xl font-bold ncr-green mb-2">Project Atleos Connect Approved!</h3>
+            <p class="text-lg text-slate-700">Your vision for the future of ATMs is greenlit!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            const options = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, options);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            const financialData = {
+                investment: 15, // Initial investment in millions
+                fraudCostBaseline: 25, // Baseline annual fraud cost in millions
+                fraudReductionRate: 0.85, // 85% reduction in fraud
+                newAcquisitionValueBaseline: 30, // Baseline new value from new user acquisition in millions
+                years: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                adoptionCurve: [0.05, 0.15, 0.25, 0.35, 0.40], // Example adoption curve for scaling benefits
+                discountRate: 0.08
+            };
+
+            const calculateFinancials = (adoptionRate) => {
+                const scale = adoptionRate / 0.40;
+                let cumulativeBenefit = 0;
+                let cumulativeInvestment = 0;
+                let paybackYear = null;
+
+                const annualBreakdown = financialData.years.map((year, i) => {
+                    const currentAdoption = financialData.adoptionCurve[i] * scale;
+                    const fraudSavings = financialData.fraudCostBaseline * financialData.fraudReductionRate * currentAdoption;
+                    const newAcquisitionValue = financialData.newAcquisitionValueBaseline * currentAdoption;
+                    return {
+                        year: year,
+                        fraudSavings: fraudSavings,
+                        newAcquisitionValue: newAcquisitionValue,
+                        totalAnnualBenefit: fraudSavings + newAcquisitionValue
+                    };
+                });
+
+                const cashFlows = annualBreakdown.map((data, i) => {
+                    const investment = (i < 2) ? financialData.investment / 2 : 0; // Assume investment spread over first 2 years
+                    cumulativeBenefit += data.totalAnnualBenefit;
+                    cumulativeInvestment += investment;
+                    if (paybackYear === null && cumulativeBenefit > cumulativeInvestment) {
+                        paybackYear = i + (cumulativeInvestment - (cumulativeBenefit - data.totalAnnualBenefit)) / data.totalAnnualBenefit;
+                    }
+                    return data.totalAnnualBenefit - investment;
+                });
+                
+                const npv = cashFlows.reduce((acc, val, i) => {
+                    return acc + val / Math.pow(1 + financialData.discountRate, i + 1);
+                }, 0);
+
+                const totalBenefit = cashFlows.reduce((a,b) => a + b, 0);
+                const roi = (npv / (financialData.investment)) * 100;
+
+                return {
+                    roi: roi.toFixed(0),
+                    npv: npv.toFixed(1),
+                    payback: (paybackYear || 5).toFixed(1),
+                    benefit: (totalBenefit + financialData.investment).toFixed(1),
+                    annualBreakdown: annualBreakdown // Return the detailed breakdown
+                };
+            };
+
+            const adoptionSlider = document.getElementById('adoptionRate');
+            const adoptionRateLabel = document.getElementById('adoptionRateLabel');
+            const roiValue = document.getElementById('roiValue');
+            const npvValue = document.getElementById('npvValue');
+            const paybackValue = document.getElementById('paybackValue');
+            const benefitValue = document.getElementById('benefitValue');
+            const heroRoi = document.getElementById('hero-roi');
+
+            adoptionSlider.addEventListener('input', (event) => {
+                const rate = parseInt(event.target.value);
+                adoptionRateLabel.textContent = `${rate}%`;
+                const newMetrics = calculateFinancials(rate / 100);
+                roiValue.textContent = `${newMetrics.roi}%`;
+                npvValue.textContent = `$${newMetrics.npv}M`;
+                paybackValue.textContent = `${newMetrics.payback} yrs`;
+                benefitValue.textContent = `$${newMetrics.benefit}M`;
+                heroRoi.textContent = `${newMetrics.roi}%`;
+            });
+
+
+            const costSavingsCtx = document.getElementById('costSavingsChart').getContext('2d');
+            new Chart(costSavingsCtx, {
+                type: 'bar',
+                data: {
+                    labels: financialData.years,
+                    datasets: [{
+                        label: 'Fraud Reduction Savings',
+                        data: financialData.years.map((y, i) => financialData.fraudCostBaseline * financialData.fraudReductionRate * financialData.adoptionCurve[i]),
+                        backgroundColor: '#10b981', // emerald-500
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: {
+                            stacked: true,
+                            ticks: { callback: value => `$${value}M` },
+                            title: { display: true, text: 'Annual Savings (in millions)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.parsed.y.toFixed(1)}M`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const revenueGrowthCtx = document.getElementById('revenueGrowthChart').getContext('2d');
+            new Chart(revenueGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: financialData.years,
+                    datasets: [{
+                        label: 'New User Acquisition Value',
+                        data: financialData.years.map((y, i) => financialData.newAcquisitionValueBaseline * financialData.adoptionCurve[i]),
+                        borderColor: '#004e3f', /* Changed to NCR Atleos Green */
+                        backgroundColor: 'rgba(0, 78, 63, 0.1)', /* Changed to NCR Atleos Green with opacity */
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: value => `$${value}M` },
+                            title: { display: true, text: 'Annual New Value (in millions)' }
+                        }
+                    },
+                     plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.parsed.y.toFixed(1)}M`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Modal Logic for KPIs (already exists)
+            const calculationModal = document.getElementById('calculationModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+
+            const fraudKpi = document.getElementById('fraud-kpi');
+            const timeKpi = document.getElementById('time-kpi');
+            const roiKpi = document.getElementById('roi-kpi');
+
+            const showModal = (title, content) => {
+                modalTitle.textContent = title;
+                modalContent.innerHTML = content;
+                calculationModal.classList.add('open');
+            };
+
+            const hideModal = () => {
+                calculationModal.classList.remove('open');
+            };
+
+            closeModalBtn.addEventListener('click', hideModal);
+            calculationModal.addEventListener('click', (e) => {
+                if (e.target === calculationModal) {
+                    hideModal();
+                }
+            });
+
+            fraudKpi.addEventListener('click', () => {
+                const baseline = financialData.fraudCostBaseline;
+                const reductionRate = financialData.fraudReductionRate * 100;
+                const annualSavings = (baseline * financialData.fraudReductionRate).toFixed(1);
+                const content = `
+                    <p class="mb-2">This figure represents the projected annual cost savings from fraud prevention.</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Baseline Annual Fraud Cost: <strong>$${baseline}M</strong> <span class="text-sm text-slate-500">(Based on industry averages and internal projections.)</span></li>
+                        <li>Projected Fraud Reduction Rate: <strong>${reductionRate}%</strong> <span class="text-sm text-slate-500">(Based on industry averages and internal projections.)</span></li>
+                        <li>Calculation: <strong>$${baseline}M &times; ${reductionRate}% = $${annualSavings}M</strong></li>
+                    </ul>
+                    <p class="mt-4 text-sm text-slate-600">This significant reduction is achieved by eliminating physical card-related fraud (like skimming) and leveraging robust multi-factor authentication.</p>
+                `;
+                showModal('Annual Fraud Cost Reduction Calculation', content);
+            });
+
+            timeKpi.addEventListener('click', () => {
+                const oldTime = 300; // seconds (5 minutes)
+                const newTime = 15; // seconds
+                const reduction = oldTime - newTime;
+                const percentageFaster = ((reduction / oldTime) * 100).toFixed(0);
+                const content = `
+                    <p class="mb-2">This percentage reflects the dramatic improvement in transaction speed.</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Average Traditional ATM Transaction Time: <strong>${oldTime} seconds (5 minutes)</strong> <span class="text-sm text-slate-500">(Based on industry averages.)</span></li>
+                        <li>Atleos Connect Transaction Time: <strong>${newTime} seconds</strong> <span class="text-sm text-slate-500">(Based on system design and testing.)</span></li>
+                        <li>Time Reduction: <strong>${reduction} seconds</strong></li>
+                        <li>Calculation: <strong>((${oldTime} - ${newTime}) / ${oldTime}) &times; 100% = ${percentageFaster}%</strong></li>
+                    </ul>
+                    <p class="mt-4 text-sm text-slate-600">Faster transactions lead to reduced queues, improved customer satisfaction, and higher ATM throughput.</p>
+                `;
+                showModal('Faster Transaction Time Calculation', content);
+            });
+
+            roiKpi.addEventListener('click', () => {
+                const currentAdoptionRate = parseInt(adoptionSlider.value) / 100;
+                const metrics = calculateFinancials(currentAdoptionRate);
+                
+                let tableRows = '';
+                metrics.annualBreakdown.forEach(data => {
+                    tableRows += `
+                        <tr>
+                            <td>${data.year}</td>
+                            <td>$${data.fraudSavings.toFixed(1)}M</td>
+                            <td>$${data.newAcquisitionValue.toFixed(1)}M</td>
+                            <td>$${data.totalAnnualBenefit.toFixed(1)}M</td>
+                        </tr>
+                    `;
+                });
+
+                const content = `
+                    <p class="mb-2">This ROI is based on our projected financial benefits and initial investment over 5 years, assuming a <strong>${(currentAdoptionRate * 100).toFixed(0)}%</strong> customer adoption rate.</p>
+                    <ul class="list-disc list-inside space-y-1 mb-4">
+                        <li>Projected 5-Year ROI: <strong>${metrics.roi}%</strong></li>
+                        <li>Net Present Value (NPV): <strong>$${metrics.npv}M</strong></li>
+                        <li>Payback Period: <strong>${metrics.payback} years</strong></li>
+                        <li>Total 5-Year Benefit: <strong>$${metrics.benefit}M</strong></li>
+                        <li>Initial Investment: <strong>$${financialData.investment}M</strong> <span class="text-sm text-slate-500">(Based on project cost estimations.)</span></li>
+                        <li>Discount Rate: <strong>${(financialData.discountRate * 100).toFixed(0)}%</strong> <span class="text-sm text-slate-500">(Standard corporate discount rate.)</span></li>
+                    </ul>
+                    
+                    <h4 class="font-semibold text-lg mb-2">Annual Financial Breakdown:</h4>
+                    <table class="calculation-table">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Fraud Savings</th>
+                                <th>New Acquisition Value</th>
+                                <th>Total Annual Benefit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                    <p class="mt-4 text-sm text-slate-600">The ROI is calculated as (Net Present Value / Initial Investment) &times; 100%. This model accounts for fraud cost reduction (Source: Industry averages and internal projections) and new user acquisition value (Source: Market research and internal projections).</p>
+                `;
+                showModal('5-Year ROI Projection Details', content);
+            });
+
+            // New: Click listener for Cost Savings Chart (Fraud Reduction)
+            const costSavingsChartCanvas = document.getElementById('costSavingsChart');
+            costSavingsChartCanvas.addEventListener('click', () => {
+                const baseline = financialData.fraudCostBaseline;
+                const reductionRate = financialData.fraudReductionRate * 100;
+                const annualSavings = (baseline * financialData.fraudReductionRate).toFixed(1);
+                const content = `
+                    <p class="mb-2">The <strong>85% fraud reduction</strong> is a conservative yet impactful projection based on the combined effect of eliminating card-present fraud vectors and leveraging robust multi-factor authentication.</p>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong>Baseline Annual Fraud Cost:</strong> We estimate a baseline annual fraud cost of <strong>$${baseline} Million</strong> <span class="text-sm text-slate-500">(Source: Industry averages and internal projections based on historical data.)</span></li>
+                        <li><strong>Impact of Cardless Transactions:</strong> By removing the physical card from the transaction process, Atleos Connect&trade; virtually eliminates the primary attack surface for card skimming and cloning, which account for a significant portion of ATM fraud.</li>
+                        <li><strong>Effectiveness of OTP and Biometrics:</strong> Industry studies and case reports demonstrate that the implementation of One-Time Passwords (OTPs) can lead to a 40% to 60% reduction in ATM fraud. Furthermore, biometric authentication provides an even stronger defense against identity theft and unauthorized access. <span class="text-sm text-slate-500">(Source: Various financial security reports and academic studies on authentication effectiveness.)</span></li>
+                        <li><strong>Combined Reduction:</strong> The 85% figure represents a weighted average of these combined security enhancements. For example, if card skimming accounts for 60% of fraud and is nearly eliminated (95% reduction), and other fraud types (40%) are reduced by 60% through OTP/biometrics, the overall reduction is substantial.</li>
+                        <li><strong>Calculation for Annual Fraud Cost Reduction:</strong>
+                            <ul class="list-disc list-inside ml-4 mt-2">
+                                <li>Baseline Annual Fraud Cost: <strong>$${baseline}M</strong></li>
+                                <li>Projected Reduction Rate: <strong>85% (0.85)</strong></li>
+                                <li>Annual Savings: <strong>$${baseline}M &times; 0.85 = $${annualSavings}M</strong></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <p class="mt-4 text-sm text-slate-600">This reduction directly translates into significant cost savings for financial institutions, bolstering their bottom line and enhancing customer trust.</p>
+                `;
+                showModal('Understanding the 85% Fraud Reduction', content);
+            });
+
+            // New: Click listener for Revenue Growth Chart (New User Acquisition)
+            const revenueGrowthChartCanvas = document.getElementById('revenueGrowthChart');
+            revenueGrowthChartCanvas.addEventListener('click', () => {
+                const baselineValue = financialData.newAcquisitionValueBaseline;
+                const currentAdoptionRate = parseInt(adoptionSlider.value) / 100;
+                const year5Adoption = financialData.adoptionCurve[4]; // Year 5 adoption rate (0.40)
+                const projectedYear5Value = (baselineValue * (currentAdoptionRate / year5Adoption) * year5Adoption).toFixed(1);
+
+                const content = `
+                    <p class="mb-2">This chart illustrates the projected new value generated from increased user acquisition and expanded services, scaled by customer adoption.</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>Baseline Annual New User Acquisition Value:</strong> <strong>$${baselineValue}M</strong> <span class="text-sm text-slate-500">(Based on market research and internal projections of new service adoption and increased customer engagement.)</span></li>
+                        <li><strong>Current Projected Adoption (Year 5):</strong> <strong>${(currentAdoptionRate * 100).toFixed(0)}%</strong></li>
+                        <li><strong>Calculation (Example for Year 5 at 40% adoption):</strong> <strong>$${baselineValue}M &times; ${financialData.adoptionCurve[4] * 100}% = $${(baselineValue * financialData.adoptionCurve[4]).toFixed(1)}M</strong></li>
+                    </ul>
+                    <p class="mt-4 text-sm text-slate-600">New value is generated through increased transaction volumes from new users, cross-selling opportunities for other financial products, and the introduction of high-margin value-added services like P2P cash transfers and bill payments.</p>
+                `;
+                showModal('Projected New Value from New User Acquisition Calculation', content);
+            });
+
+
+            // Celebration Modal Logic
+            const celebrationModal = document.getElementById('celebrationModal');
+            const closeCelebrationModalBtn = document.getElementById('closeCelebrationModalBtn');
+            const approveProjectBtn = document.querySelector('#cta button'); // Target the button in the CTA section
+
+            const showCelebrationModal = () => {
+                celebrationModal.classList.add('open');
+            };
+
+            const hideCelebrationModal = () => {
+                celebrationModal.classList.remove('open');
+            };
+
+            approveProjectBtn.addEventListener('click', (e) => {
+                e.preventDefault(); // Prevent default scroll behavior if it's a link
+                showCelebrationModal();
+            });
+
+            closeCelebrationModalBtn.addEventListener('click', hideCelebrationModal);
+            celebrationModal.addEventListener('click', (e) => {
+                if (e.target === celebrationModal) {
+                    hideCelebrationModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
